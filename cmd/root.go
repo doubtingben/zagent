@@ -81,7 +81,6 @@ func connectZcash(opts *common.Options) error {
 		}
 		time.Sleep(time.Duration(10) * time.Second)
 	}
-	return nil
 }
 
 func processBlock(client jsonrpc.RPCClient, height int) {
@@ -94,10 +93,12 @@ func processBlock(client jsonrpc.RPCClient, height int) {
 		log.Warnf("Error calling getblock: %s", err)
 	}
 
-	log.Infof("Block #%d: %+v", height, block)
+	log.Debugf("Block #%d: %+v", height, block)
 	log.Infof("Block #%d has %d transactions at %s", height, block.NumberofTransactions(), time.Unix(block.Time, 0))
-	vin, vout, vjoinsplit := block.TransactionTypes()
-	log.Infof("Block #%d has %d vin, %d vout and %d vjoinsplits", height, vin, vout, vjoinsplit)
+	for i, t := range block.TX {
+		vin, vout, vjoinsplit := t.TransactionTypes()
+		log.Infof("Block #%d, transaction %d has %d vin, %d vout and %d vjoinsplits", height, i, vin, vout, vjoinsplit)
+	}
 
 }
 
@@ -115,7 +116,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, lightwalletd.yaml)")
 	rootCmd.Flags().String("bind-addr", "127.0.0.1:9067", "the address to listen on")
-	rootCmd.Flags().Int("log-level", int(logrus.InfoLevel), "log level (logrus 1-7)")
+	rootCmd.Flags().Uint32("log-level", uint32(logrus.InfoLevel), "log level (logrus 1-7)")
 	rootCmd.Flags().String("rpc-user", "zcashrpc", "rpc user account")
 	rootCmd.Flags().String("rpc-password", "notsecret", "rpc password")
 	rootCmd.Flags().String("rpc-host", "127.0.0.1", "rpc host")
@@ -147,6 +148,8 @@ func init() {
 	log = logger.WithFields(logrus.Fields{
 		"app": "zagent",
 	})
+
+	log.Logger.SetLevel(4)
 
 	logrus.RegisterExitHandler(onexit)
 }

@@ -53,17 +53,6 @@ func (b Block) NumberofTransactions() int {
 	return len(b.TX)
 }
 
-// TransactionTypes
-func (b Block) TransactionTypes() (vin, vout, vjoinsplit int) {
-	for _, t := range b.TX {
-		vin += len(t.VIn)
-		vout += len(t.VOut)
-		vjoinsplit += len(t.VJoinSplit)
-
-	}
-	return vin, vout, vjoinsplit
-}
-
 type Transaction struct {
 	Hex          string         `json:"hex"`
 	Txid         string         `json:"txid"`
@@ -73,6 +62,14 @@ type Transaction struct {
 	VIn          []VInTX        `json:"vin"`
 	VOut         []VOutTX       `json:"vout"`
 	VJoinSplit   []VJoinSplitTX `json:"vjoinsplit"`
+}
+
+// TransactionTypes
+func (t Transaction) TransactionTypes() (vin, vout, vjoinsplit int) {
+	vin = len(t.VIn)
+	vout = len(t.VOut)
+	vjoinsplit = len(t.VJoinSplit)
+	return vin, vout, vjoinsplit
 }
 
 type VInTX struct {
