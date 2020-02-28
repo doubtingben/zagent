@@ -1,15 +1,19 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
-	"github.com/doubtingben/zagent/common"
+	"github.com/doubtingben/zagent/pkg/common"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/ybbus/jsonrpc"
 )
 
 var cfgFile string
@@ -23,8 +27,13 @@ var rootCmd = &cobra.Command{
 	Long:  `zagent is an agent service to the Zcash blockchain`,
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := &common.Options{
-			BindAddr: viper.GetString("bind-addr"),
+			BindAddr:    viper.GetString("bind-addr"),
+			RPCUser:     viper.GetString("rpc-user"),
+			RPCPassword: viper.GetString("rpc-password"),
+			RPCHost:     viper.GetString("rpc-host"),
+			RPCPort:     viper.GetString("rpc-port"),
 		}
+		log.Warnf("Options: %#v", opts)
 
 		// Start server and block, or exit
 		if err := startServer(opts); err != nil {
@@ -36,9 +45,59 @@ var rootCmd = &cobra.Command{
 }
 
 func startServer(opts *common.Options) error {
-
-	fmt.Printf("started Server\n")
+	if err := connectZcash(opts); err != nil {
+		log.Warnf("error starting zcash connections: %s", err)
+	}
+	log.Infof("started Server\n")
 	return nil
+
+}
+
+type GetInfo struct {
+	Version int `json:"version"`
+}
+
+func connectZcash(opts *common.Options) error {
+	basicAuth := base64.StdEncoding.EncodeToString([]byte(opts.RPCUser + ":" + opts.RPCPassword))
+	rpcClient := jsonrpc.NewClientWithOpts("http://"+opts.RPCHost+":"+opts.RPCPort,
+		&jsonrpc.RPCClientOpts{
+			CustomHeaders: map[string]string{
+				"Authorization": "Basic " + basicAuth,
+			}})
+	var blockChainInfo *common.GetBlockchainInfo
+	var currentHeight int
+
+	for {
+		if err := rpcClient.CallFor(&blockChainInfo, "getblockchaininfo"); err != nil {
+			log.Warnln("Error calling getblockchaininfo", err)
+			time.Sleep(time.Duration(10) * time.Second)
+			continue
+		}
+		log.Debugf("getblockchaininfo: %#v", blockChainInfo)
+		if currentHeight < blockChainInfo.Blocks {
+			currentHeight = blockChainInfo.Blocks
+			log.Infof("got new block! %d\n", blockChainInfo.Blocks)
+			go processBlock(rpcClient, blockChainInfo.Blocks)
+		}
+		time.Sleep(time.Duration(10) * time.Second)
+	}
+	return nil
+}
+
+func processBlock(client jsonrpc.RPCClient, height int) {
+	log.Infof("Processing block: %d", height)
+	var block *common.Block
+
+	err := client.CallFor(&block, "getblock", strconv.Itoa(height), 2)
+
+	if err != nil {
+		log.Warnf("Error calling getblock: %s", err)
+	}
+
+	log.Infof("Block #%d: %+v", height, block)
+	log.Infof("Block #%d has %d transactions at %s", height, block.NumberofTransactions(), time.Unix(block.Time, 0))
+	vin, vout, vjoinsplit := block.TransactionTypes()
+	log.Infof("Block #%d has %d vin, %d vout and %d vjoinsplits", height, vin, vout, vjoinsplit)
 
 }
 
@@ -57,16 +116,28 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, lightwalletd.yaml)")
 	rootCmd.Flags().String("bind-addr", "127.0.0.1:9067", "the address to listen on")
 	rootCmd.Flags().Int("log-level", int(logrus.InfoLevel), "log level (logrus 1-7)")
+	rootCmd.Flags().String("rpc-user", "zcashrpc", "rpc user account")
+	rootCmd.Flags().String("rpc-password", "notsecret", "rpc password")
+	rootCmd.Flags().String("rpc-host", "127.0.0.1", "rpc host")
+	rootCmd.Flags().String("rpc-port", "38232", "rpc port")
 
 	viper.BindPFlag("bind-addr", rootCmd.Flags().Lookup("bind-addr"))
 	viper.SetDefault("bind-addr", "127.0.0.1:9067")
 	viper.BindPFlag("log-level", rootCmd.Flags().Lookup("log-level"))
 	viper.SetDefault("log-level", int(logrus.InfoLevel))
 
+	viper.BindPFlag("rpc-user", rootCmd.Flags().Lookup("rpc-user"))
+	viper.SetDefault("rpc-user", "zcashrpc")
+	viper.BindPFlag("rpc-password", rootCmd.Flags().Lookup("rpc-password"))
+	viper.SetDefault("rpc-password", "notsecret")
+	viper.BindPFlag("rpc-host", rootCmd.Flags().Lookup("rpc-host"))
+	viper.SetDefault("rpc-host", "127.0.0.1")
+	viper.BindPFlag("rpc-port", rootCmd.Flags().Lookup("rpc-port"))
+	viper.SetDefault("rpc-port", "38232")
 	logger.SetFormatter(&logrus.TextFormatter{
 		//DisableColors:          true,
-		FullTimestamp:          true,
-		DisableLevelTruncation: true,
+		//FullTimestamp:          true,
+		//DisableLevelTruncation: true,
 	})
 
 	onexit := func() {
