@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/ybbus/jsonrpc"
+	"github.com/gofiber/fiber"
 )
 
 var cfgFile string
@@ -45,12 +46,22 @@ var rootCmd = &cobra.Command{
 }
 
 func startServer(opts *common.Options) error {
+	go startFrontend(opts)
 	if err := connectZcash(opts); err != nil {
 		log.Warnf("error starting zcash connections: %s", err)
 	}
 	log.Infof("started Server\n")
 	return nil
+}
 
+func startFrontend(opts *common.Options) {
+	app := fiber.New()
+
+	app.Get("/", func(c *fiber.Ctx) {
+		c.Send("Hello, World!")
+	})
+
+	app.Listen(3000)
 }
 
 type GetInfo struct {
