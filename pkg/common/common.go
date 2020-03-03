@@ -54,14 +54,17 @@ func (b Block) NumberofTransactions() int {
 }
 
 type Transaction struct {
-	Hex          string         `json:"hex"`
-	Txid         string         `json:"txid"`
-	Version      int            `json:"version"`
-	Locktime     int            `json:"locktime"`
-	ExpiryHeight int            `json:"expirtheight"`
-	VIn          []VInTX        `json:"vin"`
-	VOut         []VOutTX       `json:"vout"`
-	VJoinSplit   []VJoinSplitTX `json:"vjoinsplit"`
+	Hex             string                   `json:"hex"`
+	Txid            string                   `json:"txid"`
+	Version         int                      `json:"version"`
+	Locktime        int                      `json:"locktime"`
+	ExpiryHeight    int                      `json:"expirtheight"`
+	VIn             []VInTX                  `json:"vin"`
+	VOut            []VOutTX                 `json:"vout"`
+	VJoinSplit      []VJoinSplitTX           `json:"vjoinsplit"`
+	ValueBalance    float64                  `json:"valueBalance"`
+	VShieldedSpend  []map[string]interface{} `json:"vShieldedSpend"`
+	VShieldedOutput []map[string]interface{} `json:"vShieldedOutput"`
 }
 
 // TransactionTypes

@@ -10,11 +10,11 @@ import (
 
 	"github.com/doubtingben/zagent/pkg/common"
 
+	"github.com/gofiber/fiber"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/ybbus/jsonrpc"
-	"github.com/gofiber/fiber"
 )
 
 var cfgFile string
@@ -58,7 +58,32 @@ func startFrontend(opts *common.Options) {
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) {
-		c.Send("Hello, World!")
+		c.Send("zagent!")
+	})
+
+	app.Static("public", "./public")
+	// app.Use("/ws", func(c *fiber.Ctx) {
+	// 	// if c.Get("host") == "localhost:3000" {
+	// 	// 	c.Status(403).Send("Request origin not allowed")
+	// 	// } else {
+	// 	c.Next()
+	// 	//}
+	// })
+	// Upgraded websocket request
+	app.WebSocket("/ws", func(c *fiber.Conn) {
+		for {
+			mt, msg, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				break
+			}
+			log.Printf("recv: %s", msg)
+			err = c.WriteMessage(mt, msg)
+			if err != nil {
+				log.Println("write:", err)
+				break
+			}
+		}
 	})
 
 	app.Listen(3000)
@@ -124,27 +149,28 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(blockCmd)
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, lightwalletd.yaml)")
-	rootCmd.Flags().String("bind-addr", "127.0.0.1:9067", "the address to listen on")
-	rootCmd.Flags().Uint32("log-level", uint32(logrus.InfoLevel), "log level (logrus 1-7)")
-	rootCmd.Flags().String("rpc-user", "zcashrpc", "rpc user account")
-	rootCmd.Flags().String("rpc-password", "notsecret", "rpc password")
-	rootCmd.Flags().String("rpc-host", "127.0.0.1", "rpc host")
-	rootCmd.Flags().String("rpc-port", "38232", "rpc port")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, zagent.yaml)")
+	rootCmd.PersistentFlags().String("bind-addr", "127.0.0.1:9067", "the address to listen on")
+	rootCmd.PersistentFlags().Uint32("log-level", uint32(logrus.InfoLevel), "log level (logrus 1-7)")
+	rootCmd.PersistentFlags().String("rpc-user", "zcashrpc", "rpc user account")
+	rootCmd.PersistentFlags().String("rpc-password", "notsecret", "rpc password")
+	rootCmd.PersistentFlags().String("rpc-host", "127.0.0.1", "rpc host")
+	rootCmd.PersistentFlags().String("rpc-port", "38232", "rpc port")
 
-	viper.BindPFlag("bind-addr", rootCmd.Flags().Lookup("bind-addr"))
+	viper.BindPFlag("bind-addr", rootCmd.PersistentFlags().Lookup("bind-addr"))
 	viper.SetDefault("bind-addr", "127.0.0.1:9067")
-	viper.BindPFlag("log-level", rootCmd.Flags().Lookup("log-level"))
+	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
 	viper.SetDefault("log-level", int(logrus.InfoLevel))
 
-	viper.BindPFlag("rpc-user", rootCmd.Flags().Lookup("rpc-user"))
+	viper.BindPFlag("rpc-user", rootCmd.PersistentFlags().Lookup("rpc-user"))
 	viper.SetDefault("rpc-user", "zcashrpc")
-	viper.BindPFlag("rpc-password", rootCmd.Flags().Lookup("rpc-password"))
+	viper.BindPFlag("rpc-password", rootCmd.PersistentFlags().Lookup("rpc-password"))
 	viper.SetDefault("rpc-password", "notsecret")
-	viper.BindPFlag("rpc-host", rootCmd.Flags().Lookup("rpc-host"))
+	viper.BindPFlag("rpc-host", rootCmd.PersistentFlags().Lookup("rpc-host"))
 	viper.SetDefault("rpc-host", "127.0.0.1")
-	viper.BindPFlag("rpc-port", rootCmd.Flags().Lookup("rpc-port"))
+	viper.BindPFlag("rpc-port", rootCmd.PersistentFlags().Lookup("rpc-port"))
 	viper.SetDefault("rpc-port", "38232")
 	logger.SetFormatter(&logrus.TextFormatter{
 		//DisableColors:          true,
