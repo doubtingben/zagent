@@ -186,7 +186,7 @@ func init() {
 		"app": "zagent",
 	})
 
-	log.Logger.SetLevel(4)
+	log.Logger.SetLevel(7)
 
 	logrus.RegisterExitHandler(onexit)
 }
