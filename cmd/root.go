@@ -151,6 +151,7 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(blockCmd)
 	rootCmd.AddCommand(printBlockCmd)
+	rootCmd.AddCommand(generateMetricsCmd)
 
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, zagent.yaml)")
@@ -160,6 +161,10 @@ func init() {
 	rootCmd.PersistentFlags().String("rpc-password", "notsecret", "rpc password")
 	rootCmd.PersistentFlags().String("rpc-host", "127.0.0.1", "rpc host")
 	rootCmd.PersistentFlags().String("rpc-port", "38232", "rpc port")
+
+	generateMetricsCmd.PersistentFlags().Int("start-height", 0, "Start block height")
+	generateMetricsCmd.PersistentFlags().Int("num-blocks", 10, "Number of blocks")
+	generateMetricsCmd.PersistentFlags().String("output-dir", "./blocks", "Output directory")
 
 	viper.BindPFlag("bind-addr", rootCmd.PersistentFlags().Lookup("bind-addr"))
 	viper.SetDefault("bind-addr", "127.0.0.1:9067")
@@ -174,6 +179,11 @@ func init() {
 	viper.SetDefault("rpc-host", "127.0.0.1")
 	viper.BindPFlag("rpc-port", rootCmd.PersistentFlags().Lookup("rpc-port"))
 	viper.SetDefault("rpc-port", "38232")
+
+	viper.BindPFlag("start-height", generateMetricsCmd.PersistentFlags().Lookup("start-height"))
+	viper.BindPFlag("num-blocks", generateMetricsCmd.PersistentFlags().Lookup("num-blocks"))
+	viper.BindPFlag("output-dir", generateMetricsCmd.PersistentFlags().Lookup("output-dir"))
+
 	logger.SetFormatter(&logrus.TextFormatter{
 		//DisableColors:          true,
 		//FullTimestamp:          true,
