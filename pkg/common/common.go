@@ -1,5 +1,10 @@
 package common
 
+import (
+	"encoding/json"
+	"io/ioutil"
+)
+
 type Options struct {
 	BindAddr          string `json:"bind_address,omitempty"`
 	TLSCertPath       string `json:"tls_cert_path,omitempty"`
@@ -34,19 +39,27 @@ type SoftFork struct {
 }
 
 type Block struct {
-	Hash              string        `json:"hash"`
-	Confirmations     int           `json:"confirmations"`
-	Size              int           `json:"size"`
-	Height            int           `json:"height"`
-	Version           int           `json:"version"`
-	MerkleRoot        string        `json:"merkleroot"`
-	FinalSaplingRoot  string        `json:"finalsaplingroot"`
-	TX                []Transaction `json:"tx"`
-	Time              int64         `json:"time"`
-	Nonce             string        `json:"nonce"`
-	Difficulty        float64       `json:"difficulty"`
-	PreviousBlockHash string        `json:"previousblockhash"`
-	NextBlockHash     string        `json:"nextblockhash"`
+	Hash          string `json:"hash"`
+	Confirmations int    `json:"confirmations"`
+	Size          int    `json:"size"`
+	Height        int    `json:"height"`
+	Version       int    `json:"version"`
+	//MerkleRoot        string        `json:"merkleroot"`
+	//FinalSaplingRoot  string        `json:"finalsaplingroot"`
+	TX   []Transaction `json:"tx"`
+	Time int64         `json:"time"`
+	//Nonce             string        `json:"nonce"`
+	Difficulty        float64 `json:"difficulty"`
+	PreviousBlockHash string  `json:"previousblockhash"`
+	NextBlockHash     string  `json:"nextblockhash"`
+}
+
+func (b Block) WritetoFile(blockFile string) error {
+	blockJSON, err := json.MarshalIndent(b, "", "    ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(blockFile, blockJSON, 0644)
 }
 
 func (b Block) NumberofTransactions() int {
@@ -82,8 +95,8 @@ type VInTX struct {
 	Sequence  int `json:"sequemce"`
 }
 type ScriptSig struct {
-	Asm string `json:"asm"`
-	Hex string `json:"hex"`
+	//Asm string `json:"asm"`
+	//Hex string `json:"hex"`
 }
 type VOutTX struct {
 	Value        float64
@@ -91,9 +104,9 @@ type VOutTX struct {
 	ScriptPubKey ScriptPubKey
 }
 type ScriptPubKey struct {
-	Asm       string   `json:"asm"`
-	Hex       string   `json:"hex"`
-	ReqSigs   int      `json:"reqSigs`
+	//Asm       string   `json:"asm"`
+	//Hex       string   `json:"hex"`
+	//ReqSigs   int      `json:"reqSigs`
 	Type      string   `json:"type"`
 	Addresses []string `json:"addresses"`
 }

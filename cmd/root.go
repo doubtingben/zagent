@@ -150,6 +150,8 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(blockCmd)
+	rootCmd.AddCommand(printBlockCmd)
+
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, zagent.yaml)")
 	rootCmd.PersistentFlags().String("bind-addr", "127.0.0.1:9067", "the address to listen on")
