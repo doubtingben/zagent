@@ -86,7 +86,7 @@ func getFiberMetrics(startHeight *int, endHeight *int, rpcClient jsonrpc.RPCClie
 			Height:               height,
 			NumberofTransactions: block.NumberofTransactions(),
 			SaplingValuePool:     block.SaplingValuePool(),
-			SproutValuePool:      block.SaplingValuePool(),
+			SproutValuePool:      block.SproutValuePool(),
 		}
 		blockMetric.Height = height
 		blockMetric.NumberofTransactions = block.NumberofTransactions()
