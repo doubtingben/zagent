@@ -54,11 +54,78 @@ func startServer(opts *common.Options) error {
 	return nil
 }
 
+func getFiberMetrics(startHeight *int, endHeight *int, rpcClient jsonrpc.RPCClient) ([]*common.BlockMetric, error) {
+	if startHeight == nil {
+		currentHeight, err := getCurrentHeight(rpcClient)
+		if err != nil {
+			return nil, err
+		}
+		startHeight = currentHeight
+	}
+	if endHeight == nil {
+		*endHeight = *startHeight - 100
+		if *endHeight < 0 {
+			*endHeight = 0
+		}
+	}
+	if *endHeight > *startHeight {
+		return nil, fmt.Errorf("End height before Start height, bailing")
+	}
+	var blockMetrics []*common.BlockMetric
+
+	for height := *endHeight; height <= *startHeight; height++ {
+		var block *common.Block
+		log.Debugf("Calling getblock for block %d", height)
+		err := rpcClient.CallFor(&block, "getblock", strconv.Itoa(height), 2)
+		if err != nil {
+			return nil, err
+		}
+
+		//var blockMetric *BlockMetric
+		blockMetric := &common.BlockMetric{
+			Height:               height,
+			NumberofTransactions: block.NumberofTransactions(),
+			SaplingValuePool:     block.SaplingValuePool(),
+			SproutValuePool:      block.SaplingValuePool(),
+		}
+		blockMetric.Height = height
+		blockMetric.NumberofTransactions = block.NumberofTransactions()
+
+		blockMetrics = append(blockMetrics, blockMetric)
+	}
+	return blockMetrics, nil
+}
+
 func startFrontend(opts *common.Options) {
+	basicAuth := base64.StdEncoding.EncodeToString([]byte(opts.RPCUser + ":" + opts.RPCPassword))
+	rpcClient := jsonrpc.NewClientWithOpts("http://"+opts.RPCHost+":"+opts.RPCPort,
+		&jsonrpc.RPCClientOpts{
+			CustomHeaders: map[string]string{
+				"Authorization": "Basic " + basicAuth,
+			}})
+
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) {
 		c.Send("zagent!")
+	})
+
+	app.Get("/metrics", func(c *fiber.Ctx) {
+		currentHeight, err := getCurrentHeight(rpcClient)
+		if err != nil {
+			c.Next(err)
+		}
+		metrics, err := getFiberMetrics(currentHeight, nil, rpcClient)
+		if err != nil {
+			c.Next(err)
+		}
+		c.Set("Content-Type", "application/json")
+		c.JSON(metrics)
+	})
+
+	app.Use("/metrics", func(c *fiber.Ctx) {
+		c.Set("Content-Type", "application/json")
+		c.Status(500).Send(c.Error())
 	})
 
 	app.Static("public", "./public")
@@ -86,11 +153,23 @@ func startFrontend(opts *common.Options) {
 		}
 	})
 
-	app.Listen(3000)
+	if err := app.Listen(3001); err != nil {
+		log.Fatalf("Failed to start the frontend: %s", err)
+	}
+
 }
 
 type GetInfo struct {
 	Version int `json:"version"`
+}
+
+func getCurrentHeight(rpcClient jsonrpc.RPCClient) (currentHeight *int, err error) {
+	var blockChainInfo *common.GetBlockchainInfo
+	if err := rpcClient.CallFor(&blockChainInfo, "getblockchaininfo"); err != nil {
+		return nil, err
+	}
+	height := &blockChainInfo.Blocks
+	return height, nil
 }
 
 func connectZcash(opts *common.Options) error {
@@ -162,7 +241,8 @@ func init() {
 	rootCmd.PersistentFlags().String("rpc-host", "127.0.0.1", "rpc host")
 	rootCmd.PersistentFlags().String("rpc-port", "38232", "rpc port")
 
-	generateMetricsCmd.PersistentFlags().Int("start-height", 0, "Start block height")
+	generateMetricsCmd.PersistentFlags().Int("start-height", 0, "Starting block height (working backwards)")
+	generateMetricsCmd.PersistentFlags().Int("end-height", 0, "Ending block height (working backwards)")
 	generateMetricsCmd.PersistentFlags().Int("num-blocks", 10, "Number of blocks")
 	generateMetricsCmd.PersistentFlags().String("output-dir", "./blocks", "Output directory")
 
@@ -181,6 +261,7 @@ func init() {
 	viper.SetDefault("rpc-port", "38232")
 
 	viper.BindPFlag("start-height", generateMetricsCmd.PersistentFlags().Lookup("start-height"))
+	viper.BindPFlag("end-height", generateMetricsCmd.PersistentFlags().Lookup("end-height"))
 	viper.BindPFlag("num-blocks", generateMetricsCmd.PersistentFlags().Lookup("num-blocks"))
 	viper.BindPFlag("output-dir", generateMetricsCmd.PersistentFlags().Lookup("output-dir"))
 

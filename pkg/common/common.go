@@ -5,6 +5,13 @@ import (
 	"io/ioutil"
 )
 
+type BlockMetric struct {
+	Height               int     `json:"height"`
+	NumberofTransactions int     `json:"number_of_transactions"`
+	SaplingValuePool     float64 `json:"sapling_value_pool"`
+	SproutValuePool      float64 `json:"sprout_value_pool"`
+}
+
 // GetBlockchainInfo return the zcashd rpc `getblockchaininfo` status
 // https://zcash-rpc.github.io/getblockchaininfo.html
 type GetBlockchainInfo struct {
@@ -34,9 +41,10 @@ type Block struct {
 	TX   []Transaction `json:"tx"`
 	Time int64         `json:"time"`
 	//Nonce             string        `json:"nonce"`
-	Difficulty        float64 `json:"difficulty"`
-	PreviousBlockHash string  `json:"previousblockhash"`
-	NextBlockHash     string  `json:"nextblockhash"`
+	Difficulty        float64     `json:"difficulty"`
+	PreviousBlockHash string      `json:"previousblockhash"`
+	NextBlockHash     string      `json:"nextblockhash"`
+	ValuePools        []ValuePool `json:"valuePools"`
 }
 
 func (b Block) WritetoFile(blockFile string) error {
@@ -47,8 +55,35 @@ func (b Block) WritetoFile(blockFile string) error {
 	return ioutil.WriteFile(blockFile, blockJSON, 0644)
 }
 
+func (b Block) SaplingValuePool() float64 {
+	for _, pool := range b.ValuePools {
+		if pool.ID == "sapling" {
+			return pool.ChainValue
+		}
+	}
+	return 0
+}
+
+func (b Block) SproutValuePool() float64 {
+	for _, pool := range b.ValuePools {
+		if pool.ID == "sprout" {
+			return pool.ChainValue
+		}
+	}
+	return 0
+}
+
 func (b Block) NumberofTransactions() int {
 	return len(b.TX)
+}
+
+type ValuePool struct {
+	ID            string  `json:"id"`
+	Monitored     bool    `json:"monitored"`
+	ChainValue    float64 `json:"chainValue"`
+	ChainValueZat float64 `json:"chainValueZat"`
+	ValueDelta    float64 `json:"valueDelta"`
+	ValueDeltaZat float64 `json:"valueDeltaZat"`
 }
 
 type Transaction struct {

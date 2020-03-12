@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 
@@ -24,25 +25,54 @@ var generateMetricsCmd = &cobra.Command{
 			RPCHost:     viper.GetString("rpc-host"),
 			RPCPort:     viper.GetString("rpc-port"),
 		}
-		if err := writeMetrics(*opts); err != nil {
+		basicAuth := base64.StdEncoding.EncodeToString([]byte(opts.RPCUser + ":" + opts.RPCPassword))
+		rpcClient := jsonrpc.NewClientWithOpts("http://"+opts.RPCHost+":"+opts.RPCPort,
+			&jsonrpc.RPCClientOpts{
+				CustomHeaders: map[string]string{
+					"Authorization": "Basic " + basicAuth,
+				}})
+
+		if err := generateMetrics(rpcClient); err != nil {
 			log.Fatalf("Failed to write metrics file: %s", err)
 		}
 
 	},
 }
 
-type BlockMetric struct {
-	Height               int `json:"height"`
-	NumberofTransactions int `json:"number_of_transactions"`
+func generateMetrics(rpcClient jsonrpc.RPCClient) error {
+	outputDir := viper.GetString("output-dir")
+	numBlocks := viper.GetInt("num-blocks")
+	if numBlocks == 0 {
+		numBlocks = 10
+	}
+	currentHeight, err := getCurrentHeight(rpcClient)
+	if err != nil {
+		return err
+	}
+	var endHeight *int = new(int)
+	*endHeight = 419200
+	fmt.Printf("Getting metrics startng at %d through %d\n", *currentHeight, *endHeight)
+	metrics, err := getFiberMetrics(currentHeight, endHeight, rpcClient)
+	if err != nil {
+		return err
+	}
+
+	blockFile := outputDir + "/zcashmetrics.json"
+	blockJSON, err := json.MarshalIndent(metrics, "", "    ")
+	if err != nil {
+		log.Fatalln("generateMetrics MarshalIndent error: %s", err)
+	}
+	return ioutil.WriteFile(blockFile, blockJSON, 0644)
+
 }
 
 func writeMetrics(opts common.Options) error {
 	startHeight := viper.GetInt("start-height")
 	numBlocks := viper.GetInt("num-blocks")
 	outputDir := viper.GetString("output-dir")
-	log.Infof("Wirting metrics for %d, %d blocks\n", startHeight, numBlocks)
+	log.Infof("Writing metrics for %d, %d blocks\n", startHeight, numBlocks)
 	log.Infof("Writing to direcotry %s", outputDir)
-	var metrics []*BlockMetric
+	var metrics []*common.BlockMetric
 	for height := startHeight - numBlocks; height <= startHeight; height++ {
 		log.Infof("Getting block metrics for: %d", height)
 		blockMetric, err := getBlockMetrics(height, opts)
@@ -60,7 +90,7 @@ func writeMetrics(opts common.Options) error {
 	return ioutil.WriteFile(blockFile, blockJSON, 0644)
 }
 
-func getBlockMetrics(height int, opts common.Options) (*BlockMetric, error) {
+func getBlockMetrics(height int, opts common.Options) (*common.BlockMetric, error) {
 	basicAuth := base64.StdEncoding.EncodeToString([]byte(opts.RPCUser + ":" + opts.RPCPassword))
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+opts.RPCHost+":"+opts.RPCPort,
 		&jsonrpc.RPCClientOpts{
@@ -75,9 +105,11 @@ func getBlockMetrics(height int, opts common.Options) (*BlockMetric, error) {
 	}
 
 	//var blockMetric *BlockMetric
-	blockMetric := &BlockMetric{
+	blockMetric := &common.BlockMetric{
 		Height:               height,
 		NumberofTransactions: block.NumberofTransactions(),
+		SaplingValuePool:     block.SaplingValuePool(),
+		SproutValuePool:      block.SaplingValuePool(),
 	}
 	blockMetric.Height = height
 	blockMetric.NumberofTransactions = block.NumberofTransactions()
