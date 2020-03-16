@@ -3,3 +3,4 @@ zagent.yml
 concurrentFile/concurrentFile
 blocks/
 .env
+*.fasthttp.gz
