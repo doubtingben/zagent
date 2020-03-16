@@ -10,6 +10,11 @@ type BlockMetric struct {
 	NumberofTransactions int     `json:"number_of_transactions"`
 	SaplingValuePool     float64 `json:"sapling_value_pool"`
 	SproutValuePool      float64 `json:"sprout_value_pool"`
+	Size                 int     `json:"size"`
+	Time                 int64   `json:"time"`
+	NumberofTransparent  int     `json:"number_of_transparent_transactions"`
+	NumberofShielded     int     `json:"number_of_shielded_transactions"`
+	NumberofMixed        int     `json:"number_of_mixed_transactions"`
 }
 
 // GetBlockchainInfo return the zcashd rpc `getblockchaininfo` status
@@ -45,6 +50,21 @@ type Block struct {
 	PreviousBlockHash string      `json:"previousblockhash"`
 	NextBlockHash     string      `json:"nextblockhash"`
 	ValuePools        []ValuePool `json:"valuePools"`
+}
+
+func (b Block) TransactionTypes() (tTXs, sTXs int) {
+	for _, tx := range b.TX {
+		// If all 3 fields are empty, the transaction is transparent
+		if len(tx.VJoinSplit) > 0 ||
+			len(tx.VShieldedOutput) > 0 ||
+			len(tx.VShieldedSpend) > 0 {
+			tTXs++
+		} else {
+			// Otherwise, it's a shielded transaction
+			sTXs++
+		}
+	}
+	return tTXs, sTXs
 }
 
 func (b Block) WritetoFile(blockFile string) error {
@@ -100,12 +120,50 @@ type Transaction struct {
 	VShieldedOutput []map[string]interface{} `json:"vShieldedOutput"`
 }
 
-// TransactionTypes
-func (t Transaction) TransactionTypes() (vin, vout, vjoinsplit int) {
-	vin = len(t.VIn)
-	vout = len(t.VOut)
-	vjoinsplit = len(t.VJoinSplit)
-	return vin, vout, vjoinsplit
+// TransparentInAndOut return if there are transparent
+// inputs and outputs
+func (t Transaction) TransparentInAndOut() bool {
+	return len(t.VIn) > 0 && len(t.VOut) > 0
+}
+
+// IsTransparent returns if the transaction contains
+// no shielded addresses
+func (t Transaction) IsTransparent() bool {
+	return t.TransparentInAndOut() &&
+		len(t.VJoinSplit) == 0 &&
+		t.ValueBalance == 0 &&
+		len(t.VShieldedSpend) == 0 &&
+		len(t.VShieldedSpend) == 0
+}
+
+// ContainsSprout returns if a transaction contains
+// sprout transaction data
+func (t Transaction) ContainsSprout() bool {
+	return len(t.VJoinSplit) > 0
+}
+
+// ContainsSapling returns if a transaction contains
+// sapling transaction data
+// Check that there is a valueBalance value (positive or negative)
+// Check that there is data for either VShieldedSpend or VShieldedOutput
+func (t Transaction) ContainsSapling() bool {
+	return t.ValueBalance != 0 && (len(t.VShieldedSpend) > 0 ||
+		len(t.VShieldedOutput) > 0)
+}
+
+// IsShielded returns if the transaction contains
+// no transparent addresses
+func (t Transaction) IsShielded() bool {
+	return !t.TransparentInAndOut() &&
+		(t.ContainsSprout() || t.ContainsSapling())
+}
+
+// IsMixed returns if the transaction contains
+// transparent addresses and shielded transaction data
+func (t Transaction) IsMixed() bool {
+	tInOrOut := len(t.VIn) > 0 || len(t.VOut) > 0
+	return tInOrOut &&
+		(t.ContainsSprout() || t.ContainsSapling())
 }
 
 type VInTX struct {

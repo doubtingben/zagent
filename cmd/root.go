@@ -83,13 +83,23 @@ func getFiberMetrics(startHeight *int, endHeight *int, rpcClient jsonrpc.RPCClie
 
 		//var blockMetric *BlockMetric
 		blockMetric := &common.BlockMetric{
-			Height:               height,
-			NumberofTransactions: block.NumberofTransactions(),
-			SaplingValuePool:     block.SaplingValuePool(),
-			SproutValuePool:      block.SproutValuePool(),
+			Height:           height,
+			SaplingValuePool: block.SaplingValuePool(),
+			SproutValuePool:  block.SaplingValuePool(),
+			Size:             block.Size,
+			Time:             block.Time,
 		}
-		blockMetric.Height = height
-		blockMetric.NumberofTransactions = block.NumberofTransactions()
+
+		for _, tx := range block.TX {
+			blockMetric.NumberofTransactions = blockMetric.NumberofTransactions + 1
+			if tx.IsTransparent() {
+				blockMetric.NumberofTransparent = blockMetric.NumberofTransparent + 1
+			} else if tx.IsMixed() {
+				blockMetric.NumberofMixed = blockMetric.NumberofMixed + 1
+			} else if tx.IsShielded() {
+				blockMetric.NumberofShielded = blockMetric.NumberofShielded + 1
+			}
+		}
 
 		blockMetrics = append(blockMetrics, blockMetric)
 	}
@@ -210,10 +220,6 @@ func processBlock(client jsonrpc.RPCClient, height int) {
 
 	log.Debugf("Block #%d: %+v", height, block)
 	log.Infof("Block #%d has %d transactions at %s", height, block.NumberofTransactions(), time.Unix(block.Time, 0))
-	for i, t := range block.TX {
-		vin, vout, vjoinsplit := t.TransactionTypes()
-		log.Infof("Block #%d, transaction %d has %d vin, %d vout and %d vjoinsplits", height, i, vin, vout, vjoinsplit)
-	}
 
 }
 

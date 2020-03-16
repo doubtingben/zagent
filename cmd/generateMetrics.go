@@ -50,7 +50,9 @@ func generateMetrics(rpcClient jsonrpc.RPCClient) error {
 		return err
 	}
 	var endHeight *int = new(int)
-	*endHeight = 419200
+	*endHeight = 347500 // Overwinter
+	//*endHeight = *currentHeight - 10
+
 	fmt.Printf("Getting metrics startng at %d through %d\n", *currentHeight, *endHeight)
 	metrics, err := getFiberMetrics(currentHeight, endHeight, rpcClient)
 	if err != nil {
@@ -106,13 +108,23 @@ func getBlockMetrics(height int, opts common.Options) (*common.BlockMetric, erro
 
 	//var blockMetric *BlockMetric
 	blockMetric := &common.BlockMetric{
-		Height:               height,
-		NumberofTransactions: block.NumberofTransactions(),
-		SaplingValuePool:     block.SaplingValuePool(),
-		SproutValuePool:      block.SaplingValuePool(),
+		Height:           height,
+		SaplingValuePool: block.SaplingValuePool(),
+		SproutValuePool:  block.SaplingValuePool(),
+		Size:             block.Size,
+		Time:             block.Time,
 	}
-	blockMetric.Height = height
-	blockMetric.NumberofTransactions = block.NumberofTransactions()
+
+	for _, tx := range block.TX {
+		blockMetric.NumberofTransactions = blockMetric.NumberofTransactions + 1
+		if tx.IsTransparent() {
+			blockMetric.NumberofTransparent = blockMetric.NumberofTransparent + 1
+		} else if tx.IsMixed() {
+			blockMetric.NumberofMixed = blockMetric.NumberofMixed + 1
+		} else if tx.IsShielded() {
+			blockMetric.NumberofShielded = blockMetric.NumberofShielded + 1
+		}
+	}
 
 	return blockMetric, nil
 }

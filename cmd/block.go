@@ -124,15 +124,7 @@ func printBlocks(height int, numToProcess int, opts common.Options) error {
 
 		log.Debugf("Block #%d: %+v", currentHeight, block)
 		log.Infof("Block #%d has %d transactions at %s", currentHeight, block.NumberofTransactions(), time.Unix(block.Time, 0))
-		for i, t := range block.TX {
-			vin, vout, vjoinsplit := t.TransactionTypes()
-			if len(t.VShieldedOutput) > 0 {
-				log.Infof("Block #%d, transaction %d has %d vin, %d vout and %d vjoinsplits", currentHeight, i, vin, vout, vjoinsplit)
-				log.Infof("Block #%d, transaction %d %#v", currentHeight, i, t)
-			}
-			//log.Infof("Block #%d, transaction %d %#v", currentHeight, i, t)
-
-		}
 	}
+
 	return nil
 }

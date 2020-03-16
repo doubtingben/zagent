@@ -12,8 +12,8 @@ func worker(id int, wg *sync.WaitGroup,
 	errors chan<- error) {
 	for j := range jobs {
 		fmt.Println("worker", id, "processing  job", j)
-		time.Sleep(time.Second)
-		if j%3 != 7 {
+		time.Sleep(time.Second / 10)
+		if j != 7 {
 			results <- j
 		} else {
 			errors <- fmt.Errorf("error on job %v", j)
@@ -46,21 +46,15 @@ func collectResults(results chan int, errors chan error, done chan bool) (sum in
 				}
 			}
 		}
-		err = f.Close()
-		if err != nil {
-			fmt.Println(err)
-			done <- false
-			return
-		}
 	}()
 	return sum
 }
 
 func main() {
-	const numJobs = 1000
+	const numJobs = 20
 	jobs := make(chan int, numJobs)
-	results := make(chan int, numJobs)
-	errors := make(chan error, numJobs)
+	results := make(chan int)
+	errors := make(chan error)
 
 	var wg sync.WaitGroup
 	for w := 1; w <= 10; w++ {
@@ -77,6 +71,7 @@ func main() {
 	sum := collectResults(results, errors, done)
 
 	wg.Wait()
+	close(results)
 	done <- true
 
 	fmt.Printf("Sum: %d", sum)
