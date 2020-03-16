@@ -110,7 +110,7 @@ func getBlockMetrics(height int, opts common.Options) (*common.BlockMetric, erro
 	blockMetric := &common.BlockMetric{
 		Height:           height,
 		SaplingValuePool: block.SaplingValuePool(),
-		SproutValuePool:  block.SaplingValuePool(),
+		SproutValuePool:  block.SproutValuePool(),
 		Size:             block.Size,
 		Time:             block.Time,
 	}
