@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zagent-deployment
+spec:
+  selector:
+    matchLabels:
+      app: zagent
+  replicas: 1 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: zagent
+    spec:
+      containers:
+      - name: zagent
+        image: doubtingben/zagent
+        args: ["--"]
+        envFrom:
+        - configMapRef:
+            name: zcash-insight-env
+        env:
+        - name: ZCASHD_RPCPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zcashd-rpc
+              key: password       
+        ports:
+          - containerPort: 3001
+        

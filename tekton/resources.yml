@@ -20,5 +20,4 @@ spec:
   type: image
   params:
     - name: url
-      # Replace {PROJECT_ID} with your GCP Project's ID.
-      value: doubtingben/zagent:master
+      value: doubtingben/zagent
