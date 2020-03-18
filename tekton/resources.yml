@@ -1,0 +1,24 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: git-doubtingben-zagent
+spec:
+  type: git
+  params:
+    - name: revision
+      value: master
+    - name: url
+      # Point to Git url
+      value: https://github.com/doubtingben/zagent.git
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: image-dockerhub-zagent
+spec:
+  type: image
+  params:
+    - name: url
+      # Replace {PROJECT_ID} with your GCP Project's ID.
+      value: doubtingben/zagent:master
