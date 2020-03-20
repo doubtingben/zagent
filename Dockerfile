@@ -1,7 +1,7 @@
 FROM golang
 
-ADD . /go/src/github.com/doubtingben/zagent
-WORKDIR /go/src/github.com/doubtingben/zagent
+ADD . /app
+WORKDIR /app
 RUN go build
 ENTRYPOINT ["./zagent"]
 CMD ["--help"]
