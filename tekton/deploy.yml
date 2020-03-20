@@ -17,15 +17,24 @@ spec:
       - name: zagent
         image: doubtingben/zagent
         args: ["--"]
-        envFrom:
-        - configMapRef:
-            name: zcash-insight-env
         env:
-        - name: ZCASHD_RPCPASSWORD
+        - name: RPC_HOST
+          value: zcashd.default.svc.cluster.local
+        - name: RPC_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: zcash-insight-env
+              key: ZCASHD_RPCPORT
+        - name: RPC_USER
+          valueFrom:
+            configMapKeyRef:
+              name: zcash-insight-env
+              key: ZCASHD_RPCUSER
+        - name: RPC_PASSWORD
           valueFrom:
             secretKeyRef:
               name: zcashd-rpc
-              key: password       
+              key: password
         ports:
           - containerPort: 3001
         
