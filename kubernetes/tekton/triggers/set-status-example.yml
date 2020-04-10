@@ -1,0 +1,123 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: set-status-binding
+spec:
+  params:
+  - name: REPO_FULL_NAME
+    value: $(body.repository.full_name)
+  - name: SHA
+    value: $(body.pull_request.head.sha)
+  - name: TARGET_URL
+    value: $(body.pull_request.url)
+  - name: DESCRIPTION
+    value: $(body.pull_request.title)
+---    
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: set-status-template
+spec:
+  params:
+  - description: The github repository name
+    name: REPO_FULL_NAME
+  - description: The url to the PR
+    name: SHA
+  - description: The text of the comment
+    name: TARGET_URL
+  - description: author_association
+    name: author_association
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1alpha1
+    kind: TaskRun
+    metadata:
+      generateName: chatbot-run-
+    spec:
+      inputs:
+        params:
+        - name: REPO_FULL_NAME
+          value: $(params.REPO_FULL_NAME)
+        - name: SHA
+          value: $(params.SHA)
+        - name: TARGET_URL
+          value: $(params.TARGET_URL)
+        - name: DESCRIPTION
+          value: "A task description"
+        - name: STATE
+          value: "pending"
+      taskRef:
+        name: github-set-status
+---    
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: set-status-build-template
+spec:
+  params:
+  - description: The github repository name
+    name: REPO_FULL_NAME
+  - description: The url to the PR
+    name: SHA
+  - description: The text of the comment
+    name: TARGET_URL
+  - description: author_association
+    name: author_association
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1alpha1
+    kind: TaskRun
+    metadata:
+      generateName: chatbot-run-
+    spec:
+      inputs:
+        params:
+        - name: REPO_FULL_NAME
+          value: $(params.REPO_FULL_NAME)
+        - name: SHA
+          value: $(params.SHA)
+        - name: TARGET_URL
+          value: $(params.TARGET_URL)
+        - name: DESCRIPTION
+          value: "A task description"
+        - name: STATE
+          value: "pending"
+      taskRef:
+        name: github-set-status
+
+  - apiVersion: tekton.dev/v1alpha1
+    kind: TaskRun
+    metadata:
+      generateName: download-manifest-build-
+    spec:
+      taskRef:
+        name: download-manifest-build
+      inputs:
+        resources:
+          - name: source
+            resourceSpec:
+              type: git
+              params:
+                - name: url
+                  value: https://github.com/doubtingben/download-manifest.git
+                - name: revision
+                  value: test-pr
+
+  - apiVersion: tekton.dev/v1alpha1
+    kind: TaskRun
+    metadata:
+      generateName: chatbot-run-
+    spec:
+      inputs:
+        params:
+        - name: REPO_FULL_NAME
+          value: $(params.REPO_FULL_NAME)
+        - name: SHA
+          value: $(params.SHA)
+        - name: TARGET_URL
+          value: $(params.TARGET_URL)
+        - name: DESCRIPTION
+          value: "A task description"
+        - name: STATE
+          value: "success"
+      taskRef:
+        name: github-set-status

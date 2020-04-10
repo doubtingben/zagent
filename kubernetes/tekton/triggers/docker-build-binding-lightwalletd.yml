@@ -1,0 +1,11 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: docker-build-binding-lightwalletd
+spec:
+  params:
+    - name: projectName
+      value: electriccoinco/lightwalletd
+    - name: gitRepositoryURL
+      value: $(body.repository.clone_url)

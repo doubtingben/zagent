@@ -1,0 +1,99 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: listener-interceptor
+spec:
+  serviceAccountName: eventlistener-serviceaccount
+  serviceType: LoadBalancer
+  triggers:
+## Test trigger for chat interaction through comments
+    - name: chatbot-trig
+      interceptors:
+        - github:
+            secretRef:
+              secretName: eventlistener-github-shared-secret
+              secretKey: token
+            eventTypes:
+              - pull_request
+              - issue_comment
+      bindings:
+        - name: chatbot-binding
+      template:
+        name: chatbot-template
+## Lightwalletd master branch trigger
+    - name: lightwalletd-master-trig
+      interceptors:
+        - github:
+            secretRef:
+              secretName: eventlistener-github-shared-secret
+              secretKey: token
+            eventTypes:
+              - push 
+        - cel:
+            filter: >-
+              body.ref == 'refs/heads/master'
+              && body.repository.full_name == 'zcash/lightwalletd'                             
+      bindings:
+        - name: lightwalletd-master-binding
+      template:
+        name: lightwalletd-dockerbuild-template
+## Lightwalletd tag trigger
+    - name: lightwalletd-tag-trig
+      interceptors:
+        - github:
+            secretRef:
+              secretName: eventlistener-github-shared-secret
+              secretKey: token
+            eventTypes:
+              - push
+        - cel:
+            filter: >-
+              body.ref.startsWith('refs/tags/')
+              && body.repository.full_name == 'zcash/lightwalletd'   
+            overlays:
+              - key: extensions.tag
+                expression: "split(body.ref, '/')[2]"              
+      bindings:
+        - name: lightwalletd-tag-binding
+      template:
+        name: lightwalletd-dockerbuild-tag-template
+## Cloudlog master push events
+    - name: cloudlog-master-trigger
+      interceptors:
+        - github:
+            secretRef:
+              secretName: eventlistener-github-shared-secret
+              secretKey: token
+            eventTypes:
+              - push
+        - cel:
+            filter: >-
+              body.ref == 'refs/heads/master'
+              && body.repository.full_name == 'zcash-hackworks/cloudlog'
+      bindings:
+        - name: docker-build-binding-cloudlog
+      template:
+        name: docker-build-template
+## Cloudlog pull_request events
+    - name: cloudlog-pr-trigger
+      interceptors:
+        - github:
+            secretRef:
+              secretName: eventlistener-github-shared-secret
+              secretKey: token
+            eventTypes:
+              - pull_request
+        - cel:
+            filter: >-
+              body.repository.full_name == 'zcash-hackworks/cloudlog'
+              && ( body.pull_request.user.login == 'benzcash' ||
+                   body.pull_request.user.login == 'mdr0id'
+                )
+              && ( body.action == 'opened' || body.action == 'synchronize')
+            overlays:
+              - key: short_sha
+                expression: 'truncate(body.pull_request.head.sha, 7)'
+      bindings:
+        - name: cloudlog-pr-binding
+      template:
+        name: cloudlog-pr-pipeline-template

@@ -1,0 +1,11 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: docker-build-binding
+spec:
+  params:
+  - name: projectName
+    value: electriccoinco/cloudlog
+  - name: gitRepositoryURL
+    value: $(body.repository.clone_url)

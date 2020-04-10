@@ -1,0 +1,51 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: docker-build-template 
+spec:
+  params:
+  - name: projectName
+    description: Example - group/project
+  - name: gitRepositoryURL
+    description: Git repo url
+  - name: imageTag
+    description: Docker image tag
+    default: latest
+  - name: gitCommit
+    description: Git commit to build from
+    default: master  
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1alpha1
+    kind: TaskRun
+    metadata:
+      generateName: docker-build-
+    spec:
+      serviceAccountName: zcashsysadmin-service
+      taskRef:
+        name: build-docker-image-from-git-source
+      inputs:
+        resources:
+          - name: docker-source
+            resourceSpec:
+              type: git
+              params:
+                - name: revision
+                  value: $(params.gitCommit)
+                - name: url
+                  value: $(params.gitRepositoryURL)
+        params:
+          - name: pathToDockerFile
+            value: /workspace/docker-source/Dockerfile
+          - name: pathToContext
+            value: /workspace/docker-source/
+      outputs:
+        resources:
+          - name: builtImage
+            resourceSpec:
+              type: image
+              params:
+                - name: url
+                  value: $(params.projectName):$(params.imageTag)
+          - name: notification
+            resourceRef:
+              name: event-to-cloudlog    
