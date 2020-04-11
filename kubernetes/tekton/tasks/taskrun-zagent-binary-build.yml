@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: zagent-binary-build-
+spec:
+  taskRef:
+    name: zagent-binary-build
+  params:
+    - name: shortSha
+      value: "000000"
+  resources:
+    inputs:
+      - name: source
+        resourceSpec:
+          type: git
+          params:
+            - name: url
+              value: https://github.com/doubtingben/zagent.git

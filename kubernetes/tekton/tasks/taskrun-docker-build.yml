@@ -1,0 +1,25 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: zagent-build-docker-
+spec:
+  serviceAccountName: doubtingben-docker-hub
+  taskRef:
+    name: build-docker-image-from-git-source   
+  resources:
+    inputs:
+      - name: docker-source
+        resourceSpec:
+          type: git
+          params:
+            - name: url
+              value: https://github.com/doubtingben/zagent.git
+    outputs:
+      - name: builtImage
+        resourceSpec:
+          type: image
+          params:
+            - name: url
+              value: doubtingben/zagent            
+

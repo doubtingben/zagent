@@ -1,0 +1,12 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: zagent-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: zagent-address
+    networking.gke.io/managed-certificates: zagent-cert
+spec:
+  backend:
+    serviceName: zagent-svc
+    servicePort: zagent-api-svc

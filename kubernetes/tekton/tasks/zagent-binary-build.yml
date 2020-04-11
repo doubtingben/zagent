@@ -1,0 +1,39 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: zagent-binary-build
+spec:
+  volumes:
+    - name: k8s-tekton-account
+      secret:
+        secretName: k8s-tekton-account
+  params:
+    - name: shortSha
+  resources:
+    inputs:
+      - name: source
+        type: git
+  steps:
+    - name: build-binary
+      image: golang
+      script: |
+        env | sort
+        pwd
+        ls -l
+        cd /workspace/source
+        ls -l
+        go build
+    - name: upload-binary
+      image: google/cloud-sdk
+      env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/k8s-tekton-account/k8s-tekton-account.json
+      volumeMounts:
+        - name: k8s-tekton-account
+          mountPath: /var/secrets/k8s-tekton-account
+      script: |
+        #!/usr/bin/env bash
+        pwd
+        gcloud auth activate-service-account --key-file=/var/secrets/k8s-tekton-account/k8s-tekton-account.json
+        gsutil cp /workspace/source/zagent gs://zagent-tekton-builds-2020/zagent-$(inputs.params.shortSha)
