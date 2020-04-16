@@ -2,7 +2,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: cloudlog-pr-template
+  name: zagent-pr-template
 spec:
   params:
     - name: gitRepositoryURL
@@ -16,11 +16,10 @@ spec:
     - apiVersion: tekton.dev/v1beta1
       kind: TaskRun
       metadata:
-        generateName: cloudlog-build-
+        generateName: zagent-binary-build-
       spec:
-        serviceAccountName: ecc-tekton
         taskRef:
-          name: cloudlog-build
+          name: zagent-binary-build
         resources:
           inputs:
             - name: source

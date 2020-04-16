@@ -2,11 +2,11 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: cloudlog-pr-binding
+  name: zagent-pr-binding
 spec:
   params:
   - name: dockerImageName
-    value: electriccoinco/cloudlog
+    value: doubtingben/zagent
   - name: gitCommit
     value: $(body.pull_request.head.sha)
   - name: short_sha
