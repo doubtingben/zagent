@@ -44,7 +44,7 @@ spec:
         comment="$(inputs.params.comment)"
         msg=""
         case $comment in
-          "/chatbot test" )
+          "/tekton test" )
             cd /workspace/repo
             # Checkout the PR branch
             git fetch origin refs/pull/$prNum/head:pull_$prNum
@@ -57,7 +57,7 @@ spec:
             if [[ $code -ne 0 ]]; then
               msg="Tests Failed. Output: $output"
             fi;;
-          /chatbot* )
+          /tekton* )
             msg="Usage: /chatbot \<command\>. Current commands are: test";;
           * )
             echo "skipping command $comment, does not start with /chatbot prefix";;
