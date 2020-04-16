@@ -163,7 +163,7 @@ func startFrontend(opts *common.Options) {
 		}
 	})
 
-	if err := app.Listen(3001); err != nil {
+	if err := app.Listen(opts.BindAddr); err != nil {
 		log.Fatalf("Failed to start the frontend: %s", err)
 	}
 
@@ -240,7 +240,7 @@ func init() {
 
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, zagent.yaml)")
-	rootCmd.PersistentFlags().String("bind-addr", "127.0.0.1:9067", "the address to listen on")
+	rootCmd.PersistentFlags().String("bind-addr", "127.0.0.1:3000", "the address to listen on")
 	rootCmd.PersistentFlags().Uint32("log-level", uint32(logrus.InfoLevel), "log level (logrus 1-7)")
 	rootCmd.PersistentFlags().String("rpc-user", "zcashrpc", "rpc user account")
 	rootCmd.PersistentFlags().String("rpc-password", "notsecret", "rpc password")
@@ -253,7 +253,7 @@ func init() {
 	generateMetricsCmd.PersistentFlags().String("output-dir", "./blocks", "Output directory")
 
 	viper.BindPFlag("bind-addr", rootCmd.PersistentFlags().Lookup("bind-addr"))
-	viper.SetDefault("bind-addr", "127.0.0.1:9067")
+	viper.SetDefault("bind-addr", "127.0.0.1:3000")
 	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
 	viper.SetDefault("log-level", int(logrus.InfoLevel))
 

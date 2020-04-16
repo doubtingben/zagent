@@ -35,6 +35,8 @@ spec:
             secretKeyRef:
               name: zcashd-rpc
               key: password
+        - name: BIND_ADDR
+          value: 0.0.0.0:3000           
         ports:
-          - containerPort: 3001
+          - containerPort: 3000
         
