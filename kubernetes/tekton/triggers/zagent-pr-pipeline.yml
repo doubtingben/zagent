@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: cloudlog-pr-pipeline
+  name: zagent-pr-pipeline
 spec:
   resources:
     - name: source
@@ -25,14 +25,14 @@ spec:
         - name: DESCRIPTION
           value: Attempting to build a binary
         - name: CONTEXT
-          value: cloudlog-build-binary/check
+          value: build-binary/check
         - name: STATE
           value: pending
-    - name: cloudlog-build-binary
+    - name: zagent-binary-build
       runAfter:
         - set-status-pending
       taskRef:
-        name: cloudlog-build
+        name: zagent-binary-build
       params:
         - name: shortSha
           value: $(params.shortSha)
@@ -42,7 +42,7 @@ spec:
             resource: source
     - name: set-status-success
       runAfter:
-        - cloudlog-build-binary
+        - zagent-binary-build
       taskRef:
         name: github-set-status
       params:
@@ -55,6 +55,6 @@ spec:
         - name: DESCRIPTION
           value: Sucessfully built a binary
         - name: CONTEXT
-          value: cloudlog-build-binary/check
+          value: build-binary/check
         - name: STATE
           value: success

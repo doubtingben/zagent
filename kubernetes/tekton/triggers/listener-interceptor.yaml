@@ -6,20 +6,47 @@ spec:
   serviceAccountName: tekton-triggers-admin
   serviceType: LoadBalancer
   triggers:
-## Test trigger for chat interaction through comments
-    - name: chatbot-trig
+## zagent trigger for chat interaction through comments
+    # - name: chatbot-trig
+    #   interceptors:
+    #     - github:
+    #         secretRef:
+    #           secretName: listener-interceptor-github-shared-secret
+    #           secretKey: token
+    #         eventTypes:
+    #           - issue_comment
+    #     - cel:
+    #         filter: >-
+    #           body.repository.full_name == 'doubtingben/zagent'
+    #           && ( body.comment.author_association == 'OWNER'
+    #                ||
+    #                body.comment.author_association == 'COLLABORATOR' )                       
+    #   bindings:
+    #     - name: chatbot-binding
+    #   template:
+    #     name: chatbot-template
+## zagent trigger for chat interaction through comments resources
+    - name: chatbot-trig-build-binary-zagent
       interceptors:
         - github:
             secretRef:
               secretName: listener-interceptor-github-shared-secret
               secretKey: token
             eventTypes:
-              - pull_request
               - issue_comment
+        - cel:
+            filter: >-
+              body.repository.full_name == 'doubtingben/zagent'
+              && body.action == 'created'
+              && body.issue.state == 'open'
+              && ( body.comment.author_association == 'OWNER'
+                   ||
+                   body.comment.author_association == 'COLLABORATOR' )
+              && body.comment.body.matches('^/tekton($| [^ ]*$)')
       bindings:
         - name: chatbot-binding
       template:
-        name: chatbot-template
+        name: chatbot-template        
 ## zagent master push events
     - name: zagent-master-trigger
       interceptors:
@@ -51,7 +78,7 @@ spec:
               body.repository.full_name == 'doubtingben/zagent'
               && ( body.pull_request.author_association == 'OWNER'
                    ||
-                   body.pull_request.author_association == 'COLLABORATOR'
+                   body.pull_request.author_association == 'COLLABORATOR' )
               && ( body.action == 'opened' || body.action == 'synchronize')
             overlays:
               - key: short_sha

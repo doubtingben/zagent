@@ -1,0 +1,67 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: chatbot-binding
+spec:
+  params:
+    - name: prurl
+      value: $(body.issue.html_url)
+    - name: repourl
+      value: $(body.repository.html_url)
+    - name: comment
+      value: $(body.comment.body)
+    - name: author_association
+      value: $(body.issue.author_association)
+---    
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: chatbot-template
+spec:
+  params:
+    - name: repourl
+      description: The git repository url
+    - name: prurl
+      description: The url to the PR
+    - name: comment
+      description: The text of the comment
+    - name: author_association
+      description: The authos association to the github project     
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: TaskRun
+      metadata:
+        generateName: chatbot-run-
+      spec:
+        taskRef:
+          name: chatbot-task
+        resources:
+          inputs:
+            - name: repo
+              resourceSpec:
+                type: git
+                params:
+                  - name: url
+                    value: $(params.repourl)
+            - name: pr
+              resourceSpec:
+                type: pullRequest
+                params:
+                  - name: url
+                    value: $(params.prurl)
+          outputs:
+            - name: pr
+              resourceSpec:
+                type: pullRequest
+                params:
+                  - name: url
+                    value: $(params.prurl)
+                secrets:
+                  - secretName: tekton-github-token
+                    secretKey: token
+        params:
+          - name: comment
+            value: $(params.comment)
+          - name: author_association
+            value: $(params.author_association)          

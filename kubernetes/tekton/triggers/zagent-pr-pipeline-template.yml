@@ -2,7 +2,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: cloudlog-pr-pipeline-template
+  name: zagent-pr-pipeline-template
 spec:
   params:
     - name: gitHubProject
@@ -18,11 +18,11 @@ spec:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
       metadata:
-        generateName: cloudlog-pr-pipeline-
+        generateName: zagent-pr-pipeline-
       spec:
-        serviceAccountName: ecc-tekton
+        serviceAccountName: doubtingben-tekton
         pipelineRef:
-          name: cloudlog-pr-pipeline
+          name: zagent-pr-pipeline
         resources:
           - name: source
             resourceSpec:
